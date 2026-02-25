@@ -66,10 +66,6 @@ Version:   $Revision: 1.2 $
 // vtksys includes
 #include <vtksys/SystemTools.hxx>
 
-// SlicerQt includes
-#include <qSlicerApplication.h>
-#include <qSlicerLayoutManager.h>
-
 #define MRMLNodeNameKey "MRMLNodeName"
 #define OriginalNodeNameKey "OriginalNodeName"
 
@@ -2515,8 +2511,6 @@ int vtkMRMLIGTLConnectorNode::Stop()
 //---------------------------------------------------------------------------
 void vtkMRMLIGTLConnectorNode::PeriodicProcess()
 {
-  SlicerRenderBlocker renderBlocker;
-
   this->Internal->IOConnector->PeriodicProcess();
 
   while (!this->Internal->PendingNodeModifications.empty())

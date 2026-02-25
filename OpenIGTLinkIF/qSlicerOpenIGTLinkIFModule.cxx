@@ -38,8 +38,8 @@
 //-----------------------------------------------------------------------------
 #include <QtGlobal>
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
-  #include <QtPlugin>
-  Q_EXPORT_PLUGIN2(qSlicerOpenIGTLinkIFModule, qSlicerOpenIGTLinkIFModule);
+#include <QtPlugin>
+Q_EXPORT_PLUGIN2(qSlicerOpenIGTLinkIFModule, qSlicerOpenIGTLinkIFModule);
 #endif
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_OpenIGTLinkIF
@@ -70,16 +70,16 @@ qSlicerOpenIGTLinkIFModule::qSlicerOpenIGTLinkIFModule(QObject* _parent)
   Q_D(qSlicerOpenIGTLinkIFModule);
 
   connect(&d->ImportDataAndEventsTimer, SIGNAL(timeout()),
-          this, SLOT(importDataAndEvents()));
+    this, SLOT(importDataAndEvents()));
 
   vtkMRMLScene* scene = qSlicerCoreApplication::application()->mrmlScene();
   if (scene)
   {
     // Need to listen for any new connector nodes being added to start/stop timer
     this->qvtkConnect(scene, vtkMRMLScene::NodeAddedEvent,
-                      this, SLOT(onNodeAddedEvent(vtkObject*, vtkObject*)));
+      this, SLOT(onNodeAddedEvent(vtkObject*, vtkObject*)));
     this->qvtkConnect(scene, vtkMRMLScene::NodeRemovedEvent,
-                      this, SLOT(onNodeRemovedEvent(vtkObject*, vtkObject*)));
+      this, SLOT(onNodeRemovedEvent(vtkObject*, vtkObject*)));
   }
   //d->ImportDataAndEventsTimer.start(5);
 }
@@ -93,16 +93,16 @@ qSlicerOpenIGTLinkIFModule::~qSlicerOpenIGTLinkIFModule()
 QString qSlicerOpenIGTLinkIFModule::helpText()const
 {
   return "The OpenIGTLink IF module manages communications between 3D Slicer"
-         " and other OpenIGTLink-compliant software through the network.";
+    " and other OpenIGTLink-compliant software through the network.";
 }
 
 //-----------------------------------------------------------------------------
 QString qSlicerOpenIGTLinkIFModule::acknowledgementText()const
 {
   return "This module was developed by Junichi Tokuda (Brigham and Women's Hospital), "
-         "Jean-Christophe Fillion-Robin (Kitware, Inc.) and OpenIGTLink community."
-         "The research was funded by NIH (R01CA111288, P41RR019703, P41EB015898, "
-         "P01CA067165, U54EB005149) and NEDO, Japan.";
+    "Jean-Christophe Fillion-Robin (Kitware, Inc.) and OpenIGTLink community."
+    "The research was funded by NIH (R01CA111288, P41RR019703, P41EB015898, "
+    "P01CA067165, U54EB005149) and NEDO, Japan.";
 }
 
 //-----------------------------------------------------------------------------
@@ -145,9 +145,9 @@ void qSlicerOpenIGTLinkIFModule::setMRMLScene(vtkMRMLScene* scene)
 
   // Need to listen for any new connector nodes being added to start/stop timer
   this->qvtkReconnect(oldScene, scene, vtkMRMLScene::NodeAddedEvent,
-                      this, SLOT(onNodeAddedEvent(vtkObject*, vtkObject*)));
+    this, SLOT(onNodeAddedEvent(vtkObject*, vtkObject*)));
   this->qvtkReconnect(oldScene, scene, vtkMRMLScene::NodeRemovedEvent,
-                      this, SLOT(onNodeRemovedEvent(vtkObject*, vtkObject*)));
+    this, SLOT(onNodeRemovedEvent(vtkObject*, vtkObject*)));
 }
 
 //-----------------------------------------------------------------------------
@@ -185,24 +185,17 @@ void qSlicerOpenIGTLinkIFModule::onNodeRemovedEvent(vtkObject*, vtkObject* node)
 {
   Q_D(qSlicerOpenIGTLinkIFModule);
 
+  vtkMRMLScene* scene = qSlicerCoreApplication::application()->mrmlScene();
   vtkMRMLIGTLConnectorNode* connectorNode = vtkMRMLIGTLConnectorNode::SafeDownCast(node);
-  if (connectorNode)
+  if (scene && connectorNode && d->ImportDataAndEventsTimer.isActive())
   {
-    // If the timer is active
-    if (d->ImportDataAndEventsTimer.isActive())
+    // Check if there is any other connector node left in the Scene
+    std::vector<vtkMRMLNode*> nodes;
+    this->mrmlScene()->GetNodesByClass("vtkMRMLIGTLConnectorNode", nodes);
+    if (nodes.size() == 0)
     {
-      // Check if there is any other connector node left in the Scene
-      vtkMRMLScene* scene = qSlicerCoreApplication::application()->mrmlScene();
-      if (scene)
-      {
-        std::vector<vtkMRMLNode*> nodes;
-        this->mrmlScene()->GetNodesByClass("vtkMRMLIGTLConnectorNode", nodes);
-        if (nodes.size() == 0)
-        {
-          // The last connector was removed
-          d->ImportDataAndEventsTimer.stop();
-        }
-      }
+      // The last connector was removed
+      d->ImportDataAndEventsTimer.stop();
     }
   }
 }
@@ -215,6 +208,7 @@ void qSlicerOpenIGTLinkIFModule::importDataAndEvents()
   vtkSlicerOpenIGTLinkIFLogic* igtlLogic = vtkSlicerOpenIGTLinkIFLogic::SafeDownCast(l);
   if (igtlLogic)
   {
+    SlicerRenderBlocker renderBlocker;
     igtlLogic->CallConnectorTimerHander();
   }
 }
